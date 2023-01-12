@@ -27,6 +27,8 @@ kvmmake(void)
   // uart registers
   kvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R | PTE_W);
 
+  vmprint(kpgtbl);
+
   // virtio mmio disk interface
   kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
 
@@ -436,4 +438,32 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+void 
+vmprintlevels(pagetable_t pagetable,int level){
+    for (int i = 0; i < 512; i++)
+    {
+        pte_t pte=pagetable[i];//pagetable_t是一个uint64指针 pte_t是uint64
+        if((pte&PTE_V)&&(pte&(PTE_R|PTE_W|PTE_X))==0){//PTE_V表示有效 其它几个位全为0说明存的是下一个页表的地址，而不是一个具体要用的空间的地址 各个位在riscv.h第329行
+            uint64 child =PTE2PA(pte);//PTE2PA函数在riscv.h第338行
+            for(int j=0;j<level;j++){
+                printf("..");//根据层数打印..
+            }
+            printf("..%d: pte %p pa %p\n",i,pte,child);//注意pte前要加空格，不然过不了测试
+            vmprintlevels((pagetable_t)child,level+1);
+        }else if(pte&PTE_V){
+            uint64 child =PTE2PA(pte);
+            for(int j=0;j<level;j++){
+                printf("..");
+            }
+            printf("..%d: pte %p pa %p\n",i,pte,child);//注意pte前要加空格，不然过不了测试
+        }
+    }
+}
+
+void
+vmprint(pagetable_t pagetable){
+    printf("page table %p\n",pagetable);
+    vmprintlevels(pagetable,0);
 }

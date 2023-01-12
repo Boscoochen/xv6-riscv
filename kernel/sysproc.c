@@ -89,3 +89,11 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_sum_to(void)
+{
+  int n;
+  argint(0, &n);
+  return sum_to(n);
+}
